@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-iotagridash-dev-bbe2a-authRole",
+      "UnauthRoleArn": "arn:aws:iam::825765421084:role/amplify-iotagridash-dev-bbe2a-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::825765421084:role/amplify-iotagridash-dev-bbe2a-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-iotagridash-dev-bbe2a-deployment",
+      "UnauthRoleName": "amplify-iotagridash-dev-bbe2a-unauthRole",
+      "StackName": "amplify-iotagridash-dev-bbe2a",
+      "StackId": "arn:aws:cloudformation:us-east-1:825765421084:stack/amplify-iotagridash-dev-bbe2a/6eaf7280-1d26-11f0-bd03-0afffe7eb57d",
+      "AmplifyAppId": "d2hunkxhkz5awh"
+    }
+  }
+}
