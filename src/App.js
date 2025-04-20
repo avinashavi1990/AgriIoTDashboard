@@ -6,6 +6,7 @@ import { getChartData } from './api'; // ensure this is added to api.js
 
 
 function App() {
+  const [success, setSuccess] = useState(false);
   const [telemetry, setTelemetry] = useState(null);
   const [error, setError] = useState(null);
   const [chartData, setChartData] = useState([]);
@@ -28,29 +29,31 @@ function App() {
     async function fetchData() {
       try {
         const result = await getLatestSensorData();
-
+  
         if (!Array.isArray(result) || result.length === 0) {
           console.error('Invalid telemetry format received:', result);
           setError('No telemetry data available');
           return;
         }
-
+  
         const latest = result[0];
+        console.log('[Latest Telemetry]', latest);
         setTelemetry(latest);
-
+  
         setControls({
-          auto_mode: !!latest.auto_mode,
-          tank_pump: !!latest.tank_pump,
-          irr_pump: !!latest.irrigation_pump,
-          soil_threshold: Number(latest.soil_threshold) || 0,
-          poll_interval: Number(latest.poll_interval_s) || 60,
+          auto_mode: latest.auto_mode === "true",
+          tank_pump: latest.tank_pump === "true",
+          irr_pump: latest.irrigation_pump === "true",
+          soil_threshold: Number(latest.soil_threshold ?? 0),
+          poll_interval: Number(latest.poll_interval_s ?? 60),
           irrigation_schedule: {
-            enabled: !!latest.irrigation_enabled,
-            start_time: latest.irrigation_start_time || '06:30',
-            duration_min: Number(latest.irrigation_duration_min) || 0,
-            repeat: latest.irrigation_repeat || 'daily',
+            enabled: latest.irrigation_enabled === "true",
+            start_time: latest.irrigation_start_time ?? '06:30',
+            duration_min: Number(latest.irrigation_duration_min ?? 0),
+            repeat: latest.irrigation_repeat ?? 'daily',
           },
         });
+  
         const history = await getChartData({ nodeId: 1 });
         setChartData(history);
       } catch (err) {
@@ -58,9 +61,16 @@ function App() {
         setError('Failed to fetch sensor data');
       }
     }
-
-    fetchData();
+  
+    fetchData(); // initial fetch
+  
+    const interval = setInterval(() => {
+      fetchData(); // repeat every 30 seconds
+    }, 30000);
+  
+    return () => clearInterval(interval); // cleanup on unmount
   }, []);
+  
 
   const handleToggle = (key) => {
     setControls((prev) => ({
@@ -91,18 +101,26 @@ function App() {
           duration_min: Number(controls.irrigation_schedule.duration_min),
         },
       };
-      await updateShadow(shadowState);
-      alert('Settings sent to gateway');
+  
+      await updateShadow({
+        state: { desired: shadowState }
+      });
+  
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000); // hide after 3 sec
+  
     } catch (err) {
       console.error('[App] Shadow update failed:', err);
       alert('Failed to update shadow');
     }
   };
+  
 
   if (error) return <div>Error: {error}</div>;
   if (!telemetry) return <div>Loading...</div>;
 
   return (
+    <>      
     <div className="min-h-screen bg-gray-50 p-6">
       <header className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-green-700">Agri IoT Dashboard</h1>
@@ -144,16 +162,16 @@ function App() {
             <div>💧 Humidity: {telemetry.humidity_pct} %</div>
             <div>🔆 Lux: {telemetry.lux}</div>
             <div>🌱 Soil Moisture: {telemetry.soil_moisture_pct} %</div>
-            <div>🚰 Tank Pump: <strong>{telemetry.tank_pump ? 'ON' : 'OFF'}</strong></div>
-            <div>🌾 Irrigation Pump: <strong>{telemetry.irrigation_pump ? 'ON' : 'OFF'}</strong></div>
-            <div>🤖 Auto Mode: {telemetry.auto_mode ? 'Enabled' : 'Disabled'}</div>
-            <div>🧪 Threshold: {telemetry.soil_threshold} %</div>
+            <div>🚰 Tank Pump: <strong>{telemetry.tank_pump === "true" ? 'ON' : 'OFF'}</strong></div>
+            <div>🌾 Irrigation Pump: <strong>{telemetry.irrigation_pump === "true" ? 'ON' : 'OFF'}</strong></div>
+            <div>🤖 Auto Mode: {telemetry.auto_mode === "true" ? 'Enabled' : 'Disabled'}</div>
+            <div>🧪 Threshold: {telemetry.soil_threshold?.toString()} %</div>
             <div>🛢️ Tank Status: {telemetry.tank_status}</div>
-            <div>⏱️ Poll Interval: {telemetry.poll_interval_s} s</div>
+            <div>⏱️ Poll Interval: {telemetry.poll_interval_s?.toString()} s</div>
             <div>🧬 Firmware: {telemetry.firmware_version}</div>
             <div>📍 Lat/Lon: {telemetry.lat}, {telemetry.lon}</div>
             <div>
-              🗓️ Schedule: {telemetry.irrigation_enabled ? 'On' : 'Off'} @ {telemetry.irrigation_start_time}
+              🗓️ Schedule: {telemetry.irrigation_enabled === "true" ? 'On' : 'Off'} @ {telemetry.irrigation_start_time}
             </div>
           </div>
         </section>
@@ -275,10 +293,26 @@ function App() {
                 Update
               </button>
             </div>
+
+            {success && (
+              <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2 animate-fade-in-out">
+                ✅ Settings sent to gateway
+              </div>
+            )}
+
+            {/* === Debug Panel === */}
+            <details className="mt-8 text-sm text-gray-500">
+              <summary className="cursor-pointer underline">Debug: Telemetry JSON</summary>
+              <pre className="bg-gray-100 p-3 rounded mt-2 overflow-x-auto">
+                {JSON.stringify(telemetry, null, 2)}
+              </pre>
+            </details>
+
           </div>
         </section>
       </div>
     </div>
+    </>
   );
 }
 
