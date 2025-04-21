@@ -24,6 +24,7 @@ export async function updateShadow(desiredState) {
         desired: desiredState
       }
     };
+    console.log('[API] Update shadow payload:', payload);
     const res = await axios.put(API_BASE + CONTROL_PATH, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
