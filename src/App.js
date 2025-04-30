@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getLatestSensorData, updateShadow } from './api';
 import TelemetryChart from './components/TelemetryChart';
 import { getChartData } from './api';
+import { DateTime } from 'luxon';
 
 function App() {
   const [success, setSuccess] = useState(false);
@@ -111,13 +112,21 @@ function App() {
 
   if (error) return <div className="text-red-600 p-6">{error}</div>;
   if (!telemetry) return <div className="p-6">Loading...</div>;
+        const trimmedTime = telemetry.time?.slice(0, 23) ?? ''; // Safe fallback
+      const packetTime = DateTime.fromFormat(trimmedTime, 'yyyy-MM-dd HH:mm:ss.SSS', {
+        zone: 'Asia/Kolkata',
+        setZone: true,
+      });
 
   return (
     <div className="min-h-screen bg-parchment p-6 font-sans">
       <header className="bg-forest text-white px-6 py-6 rounded-b-xl mb-8 shadow-md">
         <h1 className="text-4xl font-bold text-white text-center">Agri IoT Dashboard</h1>
         <p className="text-sm text-center mt-2">
-          Latest packet received at: <span className="font-medium">{new Date(telemetry.time).toLocaleString()}</span>
+          Latest packet received at: <span className="font-medium">
+            {packetTime.isValid ? packetTime.toFormat('dd MMM yyyy, hh:mm a ZZZZ') : 'Invalid timestamp'}
+          </span>
+
         </p>
       </header>
 
